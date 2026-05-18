@@ -18,7 +18,7 @@ index bac4ed9..1eafd43 100644
 @@ -22,7 +22,11 @@
  #ifndef ServoFirmata_h
  #define ServoFirmata_h
- 
+
 +#ifdef ESP32
 +#include <ESP32Servo.h>
 +#else
@@ -26,4 +26,22 @@ index bac4ed9..1eafd43 100644
 +#endif
  #include <ConfigurableFirmata.h>
  #include "FirmataFeature.h"
- 
+
+diff --git a/libraries/ConfigurableFirmata/src/ArduinoSleep.cpp b/libraries/ConfigurableFirmata/src/ArduinoSleep.cpp
+index f9e32fe..c36266a 100644
+--- a/libraries/ConfigurableFirmata/src/ArduinoSleep.cpp
++++ b/libraries/ConfigurableFirmata/src/ArduinoSleep.cpp
+@@ -8,8 +8,10 @@ void ArduinoSleep::reset()
+ 	_messageReceived = millis();
+ }
+
+-// Code can only be used on ESP32 (others would need a very different implementation for similar features)
+-#if defined(ESP32)
++// Code can only be used on ESP32 variants that have RTC IO + ext0 wakeup
++// (classic ESP32, S2, S3). ESP32-C3/C6 don't have RTC IO and only support
++// GPIO/EXT1 wakeup, so we exclude them here.
++#if defined(ESP32) && SOC_PM_SUPPORT_EXT0_WAKEUP
+ void ArduinoSleep::EnterSleepMode()
+ {
+ 	esp_sleep_enable_ext0_wakeup((gpio_num_t)_wakeupPin, _triggerValue); //1 = High, 0 = Low
+

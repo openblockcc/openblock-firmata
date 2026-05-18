@@ -4,39 +4,13 @@
 
 #include <ConfigurableFirmata.h>
 
-// Use this to enable WIFI instead of serial communication. Tested on ESP32, but should also
-// work with Wifi-enabled Arduinos
-// #define ENABLE_WIFI
+// Feature toggles (ENABLE_*) are configured in CMakeLists.txt via
+// FIRMATA_BASE_FEATURES and add_board_target(... EXTRA_FEATURES / DISABLE_FEATURES).
+// They are injected as -D macros by arduino-cli at compile time.
 
 const char* ssid     = "your-ssid";
 const char* password = "your-password";
 const int NETWORK_PORT = 27016;
-
-// Use these defines to easily enable or disable certain modules
-
-// #define ENABLE_ONE_WIRE
-
-#define ENABLE_SERVO
-
-// #define ENABLE_ACCELSTEPPER
-
-// This is rarely used
-// #define ENABLE_BASIC_SCHEDULER
-#define ENABLE_SERIAL
-#define ENABLE_I2C
-#define ENABLE_SPI
-#define ENABLE_ANALOG
-#define ENABLE_DIGITAL
-#define ENABLE_DHT
-#define ENABLE_FREQUENCY
-
-#define ENABLE_SONAR
-#define ENABLE_BUZZER
-
-// Currently supported for AVR and ESP32
-#if defined (ESP32) || defined (ARDUINO_ARCH_AVR)
-#define ENABLE_SLEEP
-#endif
 
 #ifdef ENABLE_DIGITAL
 #include <DigitalInputFirmata.h>
