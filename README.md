@@ -1,8 +1,25 @@
 # openblock-firmata
 
-### Instructions
+## Instructions
+
 ```bash
 git submodule init
 git submodule update
-make all
+cmake -B build -G Ninja
+cmake --build build
+```
+
+Flash artifacts land in `dist/<board>/`. Build a single board with
+`cmake --build build --target arduinoEsp32`. Reset everything (outputs and
+submodule patches) with `cmake --build build --target clean-all`.
+
+Supported boards: `arduinoUno`, `arduinoUnoUltra`, `arduinoMega2560`, `arduinoEsp32`, `arduinoRP2040`, `arduinoEsp8266`.
+
+The RP2040 and ESP8266 cores are not bundled. Install them via `arduino-cli core install` first:
+
+```bash
+arduino-cli core install rp2040:rp2040 \
+  --additional-urls https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+arduino-cli core install esp8266:esp8266 \
+  --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 ```

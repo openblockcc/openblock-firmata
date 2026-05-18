@@ -8,26 +8,15 @@
 // work with Wifi-enabled Arduinos
 // #define ENABLE_WIFI
 
-#ifdef ENABLE_WIFI
 const char* ssid     = "your-ssid";
 const char* password = "your-password";
 const int NETWORK_PORT = 27016;
-#endif
 
 // Use these defines to easily enable or disable certain modules
 
 // #define ENABLE_ONE_WIRE
 
-// Note that the SERVO module currently is not supported on ESP32. So either disable this or patch the library
-#ifndef ESP32
-#define ENABLE_SERVO 
-#endif
-
-#if defined(__AVR__)
-#define FIRMATA_BAUDRATE 57600
-#else
-#define FIRMATA_BAUDRATE 115200
-#endif
+#define ENABLE_SERVO
 
 // #define ENABLE_ACCELSTEPPER
 
@@ -44,6 +33,10 @@ const int NETWORK_PORT = 27016;
 #define ENABLE_SONAR
 #define ENABLE_BUZZER
 
+// Currently supported for AVR and ESP32
+#if defined (ESP32) || defined (ARDUINO_ARCH_AVR)
+#define ENABLE_SLEEP
+#endif
 
 #ifdef ENABLE_DIGITAL
 #include <DigitalInputFirmata.h>
@@ -51,6 +44,11 @@ DigitalInputFirmata digitalInput;
 
 #include <DigitalOutputFirmata.h>
 DigitalOutputFirmata digitalOutput;
+#endif
+
+#ifdef ENABLE_SLEEP
+#include "ArduinoSleep.h"
+ArduinoSleep sleeper(39, 0);
 #endif
 
 #ifdef ENABLE_ANALOG
@@ -110,7 +108,6 @@ BuzzerFirmata buzzerFirmata;
 FirmataExt firmataExt;
 
 #ifdef ENABLE_SERVO
-#include <Servo.h>
 #include <ServoFirmata.h>
 ServoFirmata servo;
 #endif
@@ -137,87 +134,94 @@ FirmataScheduler scheduler;
 
 void systemResetCallback()
 {
-  for (byte i = 0; i < TOTAL_PINS; i++) {
-    if (IS_PIN_ANALOG(i)) {
-      Firmata.setPinMode(i, PIN_MODE_ANALOG);
-    } else if (IS_PIN_DIGITAL(i)) {
-      Firmata.setPinMode(i, PIN_MODE_OUTPUT);
-    }
-  }
-  firmataExt.reset();
+// Does more harm than good on ESP32 (because may touch pins reserved
+// for memory IO and other reserved functions)
+#ifndef ESP32 
+	for (byte i = 0; i < TOTAL_PINS; i++) 
+	{
+		if (FIRMATA_IS_PIN_ANALOG(i)) 
+		{
+			Firmata.setPinMode(i, PIN_MODE_ANALOG);
+		} 
+		else if (IS_PIN_DIGITAL(i)) 
+		{
+			Firmata.setPinMode  (i, PIN_MODE_OUTPUT);
+		}
+	}
+#endif
+	firmataExt.reset();
 }
 
 void initTransport()
 {
-  // Uncomment to save a couple of seconds by disabling the startup blink sequence.
-  // Firmata.disableBlinkVersion();
-#ifdef ENABLE_WIFI
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  pinMode(VERSION_BLINK_PIN, OUTPUT);
-  bool pinIsOn = false;
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(100);
-    pinIsOn = !pinIsOn;
-    digitalWrite(VERSION_BLINK_PIN, pinIsOn);
-  }
-  Firmata.begin(serverStream);
-  Firmata.blinkVersion(); // Because the above doesn't do it.
-#else 
-  Firmata.begin(FIRMATA_BAUDRATE);
+	// Uncomment to save a couple of seconds by disabling the startup blink sequence.
+	// Firmata.disableBlinkVersion();
+  
+#ifdef ESP8266
+	// need to ignore pins 1 and 3 when using an ESP8266 board. These are used for the serial communication.
+	Firmata.setPinMode(1, PIN_MODE_IGNORE);
+	Firmata.setPinMode(3, PIN_MODE_IGNORE);
 #endif
-    
+#ifdef ENABLE_WIFI
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssid, password);
+	pinMode(VERSION_BLINK_PIN, OUTPUT);
+	bool pinIsOn = false;
+	while (WiFi.status() != WL_CONNECTED)
+	{
+		delay(100);
+		pinIsOn = !pinIsOn;
+		digitalWrite(VERSION_BLINK_PIN, pinIsOn);
+	}
+	Firmata.begin(serverStream);
+	Firmata.blinkVersion(); // Because the above doesn't do it.
+#else 
+	Firmata.begin(115200);
+#endif
 }
 
 void initFirmata()
 {
-  // Set firmware name and version. The name is automatically derived from the name of this file.
-  // Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-  // The usage of the above shortcut is not recommended, since it stores the full path of the file name in a 
-  // string constant, using both flash and ram. 
-  Firmata.setFirmwareNameAndVersion("ConfigurableFirmata", FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-
 #ifdef ENABLE_DIGITAL
-  firmataExt.addFeature(digitalInput);
-  firmataExt.addFeature(digitalOutput);
+	firmataExt.addFeature(digitalInput);
+	firmataExt.addFeature(digitalOutput);
 #endif
 	
 #ifdef ENABLE_ANALOG
-  firmataExt.addFeature(analogInput);
-  firmataExt.addFeature(analogOutput);
+	firmataExt.addFeature(analogInput);
+	firmataExt.addFeature(analogOutput);
 #endif
 	
 #ifdef ENABLE_SERVO
-  firmataExt.addFeature(servo);
+	firmataExt.addFeature(servo);
 #endif
 	
 #ifdef ENABLE_I2C
-  firmataExt.addFeature(i2c);
+	firmataExt.addFeature(i2c);
 #endif
 	
 #ifdef ENABLE_ONE_WIRE
-  firmataExt.addFeature(oneWire);
+	firmataExt.addFeature(oneWire);
 #endif
-	
+
 #ifdef ENABLE_SERIAL
-  firmataExt.addFeature(serial);
+	firmataExt.addFeature(serial);
 #endif
 	
 #ifdef ENABLE_BASIC_SCHEDULER
-  firmataExt.addFeature(scheduler);
+	firmataExt.addFeature(scheduler);
 #endif
 	
   firmataExt.addFeature(reporting);
 #ifdef ENABLE_SPI
-  firmataExt.addFeature(spi);
+	firmataExt.addFeature(spi);
 #endif
 #ifdef ENABLE_ACCELSTEPPER
-  firmataExt.addFeature(accelStepper);
+	firmataExt.addFeature(accelStepper);
 #endif
 	
 #ifdef ENABLE_DHT
-  firmataExt.addFeature(dhtFirmata);
+	firmataExt.addFeature(dhtFirmata);
 #endif
 
 #ifdef ENABLE_SONAR
@@ -229,32 +233,41 @@ void initFirmata()
 #endif
 
 #ifdef ENABLE_FREQUENCY
-  firmataExt.addFeature(frequency);
+	firmataExt.addFeature(frequency);
 #endif
 
-  Firmata.attach(SYSTEM_RESET, systemResetCallback);
+#ifdef ENABLE_SLEEP
+	firmataExt.addFeature(sleeper);
+#endif
+
+	Firmata.attach(SYSTEM_RESET, systemResetCallback);
 }
 
 void setup()
 {
-	initFirmata();
+	// Set firmware name and version.
+	// Do this before initTransport(), because some client libraries expect that a reset sends this automatically.
+	Firmata.setFirmwareNameAndVersion("ConfigurableFirmata", FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
 	initTransport();
 	Firmata.sendString(F("Booting device. Stand by..."));
+	initFirmata();
 
 	Firmata.parse(SYSTEM_RESET);
 }
 
 void loop()
 {
-  while(Firmata.available()) {
-    Firmata.processInput();
-    if (!Firmata.isParsingMessage()) {
-      break;
-    }
-  }
+	while(Firmata.available()) 
+	{
+		Firmata.processInput();
+		if (!Firmata.isParsingMessage()) 
+		{
+			break;
+		}
+	}
 
-  firmataExt.report(reporting.elapsed());
+	firmataExt.report(reporting.elapsed());
 #ifdef ENABLE_WIFI
-  serverStream.maintain();
+	serverStream.maintain();
 #endif
 }

@@ -10,3 +10,9 @@
 [submodule "libraries/DHT_sensor_library"]
 	path = libraries/DHT_sensor_library
 	url = https://github.com/adafruit/DHT-sensor-library
+[submodule "libraries/Servo"]
+	path = libraries/Servo
+	url = https://github.com/arduino-libraries/Servo.git
+[submodule "libraries/ESP32Servo"]
+	path = libraries/ESP32Servo
+	url = https://github.com/madhephaestus/ESP32Servo.git

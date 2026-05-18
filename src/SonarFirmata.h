@@ -114,11 +114,7 @@ void SonarFirmata::attach(byte trigPin, byte echoPin)
 {
     if (!_sonar || _trigPin != trigPin || _echoPin != echoPin)
     {
-        if (_trigPin != trigPin || _echoPin != trigPin)
-        {
-            delete _sonar;
-            _sonar = nullptr;
-        }
+        delete _sonar;
         _sonar = new Ultrasonic(trigPin, echoPin);
         _trigPin = trigPin;
         _echoPin = echoPin;

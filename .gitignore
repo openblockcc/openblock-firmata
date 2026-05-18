@@ -1,8 +1,11 @@
 # vscode config file
 .vscode
 
-# build file
+# build outputs
 *_build
+build/
+dist/
 
-# patched flag
+# patched flag (legacy Makefile)
 patched.flag
+*.flag
