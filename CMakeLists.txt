@@ -172,18 +172,24 @@ add_board_target(arduinoEsp32     "esp32:esp32:esp32"
     PATCH arduinoEsp32.patch
     KEEP  "*.merged.bin"
 )
-add_board_target(arduinoEsp32S3   "esp32:esp32:esp32s3"
-    PATCH arduinoEsp32.patch
-    KEEP  "*.merged.bin"
-)
-add_board_target(arduinoEsp32C3   "esp32:esp32:esp32c3"
-    PATCH arduinoEsp32.patch
-    KEEP  "*.merged.bin"
-)
-add_board_target(arduinoEsp32C6   "esp32:esp32:esp32c6"
-    PATCH arduinoEsp32.patch
-    KEEP  "*.merged.bin"
-)
+# ESP32-S3 / C3 / C6 fall into the `#elif defined(ESP32)` branch in
+# libraries/ConfigurableFirmata/src/utility/Boards.h, which hard-codes the
+# classic ESP32 (WROOM) pin map (SPI 12-15, I2C 21/22, GPIO up to 39). The
+# new variants have entirely different pinouts, so the resulting firmware
+# advertises wrong pin capabilities to the Firmata host. Re-enable after
+# adding chip-specific branches (CONFIG_IDF_TARGET_ESP32S3/C3/C6) via patch.
+# add_board_target(arduinoEsp32S3   "esp32:esp32:esp32s3"
+#     PATCH arduinoEsp32.patch
+#     KEEP  "*.merged.bin"
+# )
+# add_board_target(arduinoEsp32C3   "esp32:esp32:esp32c3"
+#     PATCH arduinoEsp32.patch
+#     KEEP  "*.merged.bin"
+# )
+# add_board_target(arduinoEsp32C6   "esp32:esp32:esp32c6"
+#     PATCH arduinoEsp32.patch
+#     KEEP  "*.merged.bin"
+# )
 add_board_target(arduinoPico      "rp2040:rp2040:rpipico"
     KEEP "*.uf2"
 )
